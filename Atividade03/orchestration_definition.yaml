@@ -1,0 +1,48 @@
+resources:
+  jobs:
+    job_pipeline_medalhao:
+      name: job_pipeline_medalhao
+      schedule:
+        quartz_cron_expression: 23 4 16 * * ?
+        timezone_id: UTC
+        pause_status: PAUSED
+      tasks:
+        - task_key: run_bronze_ingestion
+          notebook_task:
+            notebook_path: /Workspace/Users/alecsandergr6@gmail.com/Orquestration/01_land_to_bronze
+            source: WORKSPACE
+          max_retries: 2
+          min_retry_interval_millis: 180000
+          disable_auto_optimization: false
+        - task_key: run_silver_transform
+          depends_on:
+            - task_key: run_bronze_ingestion
+          notebook_task:
+            notebook_path: /Workspace/Users/alecsandergr6@gmail.com/Orquestration/02_bronze_to_silver
+            source: WORKSPACE
+          max_retries: 2
+          min_retry_interval_millis: 180000
+          disable_auto_optimization: false
+        - task_key: run_gold_aggregate
+          depends_on:
+            - task_key: run_silver_transform
+          notebook_task:
+            notebook_path: /Workspace/Users/alecsandergr6@gmail.com/Orquestration/03_silver_to_gold
+            source: WORKSPACE
+          max_retries: 2
+          min_retry_interval_millis: 180000
+          disable_auto_optimization: false
+        - task_key: run_consume_data
+          depends_on:
+            - task_key: run_gold_aggregate
+          notebook_task:
+            notebook_path: /Workspace/Users/alecsandergr6@gmail.com/Orquestration/04_gold_to_consume
+            source: WORKSPACE
+          max_retries: 2
+          min_retry_interval_millis: 180000
+          disable_auto_optimization: false
+      tags:
+        business: sales
+      queue:
+        enabled: true
+      performance_target: PERFORMANCE_OPTIMIZED
